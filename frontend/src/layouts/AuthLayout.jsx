@@ -43,8 +43,7 @@ export default function AuthLayout() {
           </ul>
         </div>
 
-        <p className="relative z-10 text-xs text-brand-200">© {new Date().getFullYear()} TaskFlow. All rights reserved.</p>
-      </div>
+         </div>
 
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
         <div className="mx-auto w-full max-w-sm">
