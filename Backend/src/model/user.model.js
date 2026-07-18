@@ -17,25 +17,43 @@ const userSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: [true, "password required"],
+            required: function () {
+                return !this.googleId;
+            },
             minlength: [8, "password must contain 8 character"],
             select: false
         },
         avatar: {
             type: String,
             default: ""
+        },
+        googleId: {
+            type: String,
+            default: null,
+            select: false
+        },
+        resetPasswordToken: {
+            type: String,
+            default: null,
+            select: false
+        },
+        resetPasswordExpire: {
+            type: Date,
+            default: null,
+            select: false
         }
     },
     { timestamps: true }
 )
 
 userSchema.pre("save", async function () {
-    if (!this.isModified("password")) return;
+    if (!this.isModified("password") || !this.password) return;
     const salt = await bcrypt.genSalt(10)
     this.password = await bcrypt.hash(this.password, salt)
 })
 
 userSchema.methods.matchpassword = async function (enteredpassword) {
+    if (!this.password) return false;
     const compare = await bcrypt.compare(enteredpassword, this.password)
     return compare;
 

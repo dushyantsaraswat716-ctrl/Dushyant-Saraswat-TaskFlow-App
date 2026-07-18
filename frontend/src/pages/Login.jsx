@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 import { login, clearAuthError } from "../redux/slices/authSlice";
 import useToast from "../hooks/useToast";
+import GoogleAuthButton from "../components/GoogleAuthButton";
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -61,13 +62,12 @@ export default function Login() {
         <div>
           <div className="flex items-center justify-between">
             <label className="label-text">Password</label>
-            <button
-              type="button"
-              onClick={() => toast.info("Password reset isn't available yet.")}
+            <Link
+              to="/forgot-password"
               className="mb-1.5 text-xs font-medium text-brand-600 hover:text-brand-700"
             >
               Forgot password?
-            </button>
+            </Link>
           </div>
           <div className="relative">
             <FiLock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -98,6 +98,14 @@ export default function Login() {
           {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
+
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+        <span className="text-xs font-medium text-slate-400">or</span>
+        <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+      </div>
+
+      <GoogleAuthButton />
 
       <p className="mt-6 text-center text-sm text-slate-400">
         Don't have an account?{" "}

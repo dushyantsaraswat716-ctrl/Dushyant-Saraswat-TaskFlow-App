@@ -42,7 +42,7 @@ export default function AuthLayout() {
             ))}
           </ul>
         </div>
-
+          <p> Developed by @D.S.P  </p>
          </div>
 
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">

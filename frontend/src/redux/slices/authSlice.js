@@ -1,5 +1,14 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { loginUser, registerUser, fetchMe, uploadAvatar as uploadAvatarRequest, changePassword as changePasswordRequest } from "../../services/authService";
+import {
+  loginUser,
+  registerUser,
+  fetchMe,
+  uploadAvatar as uploadAvatarRequest,
+  changePassword as changePasswordRequest,
+  forgotPassword as forgotPasswordRequest,
+  resetPassword as resetPasswordRequest,
+  googleLogin as googleLoginRequest,
+} from "../../services/authService";
 import { TOKEN_KEY, USER_KEY, REMEMBER_KEY } from "../../constants";
 
 const readStorage = () => {
@@ -50,6 +59,34 @@ export const signup = createAsyncThunk("auth/signup", async ({ name, email, pass
   }
 });
 
+export const googleAuthLogin = createAsyncThunk("auth/googleAuthLogin", async (credential, { rejectWithValue }) => {
+  try {
+    const data = await googleLoginRequest(credential);
+    persist(data, true);
+    return { user: { _id: data._id, name: data.name, email: data.email, avatar: data.avatar || "" }, token: data.token };
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || "Google sign-in failed");
+  }
+});
+
+export const forgotPassword = createAsyncThunk("auth/forgotPassword", async ({ email }, { rejectWithValue }) => {
+  try {
+    const data = await forgotPasswordRequest({ email });
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || "Could not send reset link");
+  }
+});
+
+export const resetPassword = createAsyncThunk("auth/resetPassword", async ({ token, password, confirmPassword }, { rejectWithValue }) => {
+  try {
+    const data = await resetPasswordRequest(token, { password, confirmPassword });
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || "Could not reset password");
+  }
+});
+
 export const loadCurrentUser = createAsyncThunk("auth/loadCurrentUser", async (_, { rejectWithValue }) => {
   try {
     const user = await fetchMe();
@@ -92,6 +129,8 @@ const authSlice = createSlice({
     status: "idle",
     avatarStatus: "idle",
     passwordStatus: "idle",
+    forgotPasswordStatus: "idle",
+    resetPasswordStatus: "idle",
     error: null,
   },
   reducers: {
@@ -136,6 +175,42 @@ const authSlice = createSlice({
       })
       .addCase(signup.rejected, (state, action) => {
         state.status = "failed";
+        state.error = action.payload;
+      })
+      .addCase(googleAuthLogin.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(googleAuthLogin.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+      })
+      .addCase(googleAuthLogin.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload;
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.forgotPasswordStatus = "loading";
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.forgotPasswordStatus = "succeeded";
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.forgotPasswordStatus = "failed";
+        state.error = action.payload;
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.resetPasswordStatus = "loading";
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.resetPasswordStatus = "succeeded";
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.resetPasswordStatus = "failed";
         state.error = action.payload;
       })
       .addCase(loadCurrentUser.fulfilled, (state, action) => {
