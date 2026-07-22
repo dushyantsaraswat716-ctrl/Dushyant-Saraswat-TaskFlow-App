@@ -98,6 +98,64 @@ export const uploadAvatar = asynchandler(async (req, res) => {
     })
 })
 
+export const updateProfile = asynchandler(async (req, res) => {
+    const { name, email } = req.body;
+
+    if (!name && !email) {
+        return res.status(400).json({
+            message: "please provide name or email to update"
+        })
+    }
+
+    if (name !== undefined && !name.trim()) {
+        return res.status(400).json({
+            message: "name cannot be empty"
+        })
+    }
+
+    let normalizedEmail;
+    if (email !== undefined) {
+        normalizedEmail = String(email).trim().toLowerCase();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(normalizedEmail)) {
+            return res.status(400).json({
+                message: "please provide a valid email"
+            })
+        }
+    }
+
+    const user = await User.findById(req.user.id)
+    if (!user) {
+        return res.status(404).json({
+            message: "user not found"
+        })
+    }
+
+    if (normalizedEmail && normalizedEmail !== user.email) {
+        const emailTaken = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+        if (emailTaken) {
+            return res.status(409).json({
+                message: "email is already in use"
+            })
+        }
+        user.email = normalizedEmail;
+    }
+
+    if (name !== undefined) {
+        user.name = name.trim();
+    }
+
+    await user.save()
+
+    return res.status(200).json({
+        message: "profile updated",
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar
+    })
+})
+
 export const changePassword = asynchandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 

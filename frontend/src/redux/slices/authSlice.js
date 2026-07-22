@@ -3,6 +3,7 @@ import {
   loginUser,
   registerUser,
   fetchMe,
+  updateProfile as updateProfileRequest,
   uploadAvatar as uploadAvatarRequest,
   changePassword as changePasswordRequest,
   forgotPassword as forgotPasswordRequest,
@@ -108,6 +109,19 @@ export const uploadAvatar = createAsyncThunk("auth/uploadAvatar", async (file, {
   }
 });
 
+export const updateProfile = createAsyncThunk(
+  "auth/updateProfile",
+  async ({ name, email }, { rejectWithValue }) => {
+    try {
+      const data = await updateProfileRequest({ name, email });
+      patchStoredUser({ name: data.name, email: data.email });
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Could not update profile");
+    }
+  }
+);
+
 export const changePassword = createAsyncThunk(
   "auth/changePassword",
   async ({ currentPassword, newPassword }, { rejectWithValue }) => {
@@ -128,6 +142,7 @@ const authSlice = createSlice({
     isAuthenticated: !!initial.token,
     status: "idle",
     avatarStatus: "idle",
+    profileStatus: "idle",
     passwordStatus: "idle",
     forgotPasswordStatus: "idle",
     resetPasswordStatus: "idle",
@@ -231,6 +246,18 @@ const authSlice = createSlice({
       })
       .addCase(uploadAvatar.rejected, (state, action) => {
         state.avatarStatus = "failed";
+        state.error = action.payload;
+      })
+      .addCase(updateProfile.pending, (state) => {
+        state.profileStatus = "loading";
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.profileStatus = "succeeded";
+        state.user = { ...state.user, name: action.payload.name, email: action.payload.email };
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.profileStatus = "failed";
         state.error = action.payload;
       })
       .addCase(changePassword.pending, (state) => {

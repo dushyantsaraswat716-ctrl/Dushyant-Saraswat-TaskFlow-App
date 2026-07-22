@@ -1,5 +1,5 @@
 import express from "express"
-import {getMe,loginUser,registerUser,uploadAvatar,changePassword,forgotPassword,resetPassword,googleAuth } from "../controller/auth.controller.js";
+import {getMe,loginUser,registerUser,uploadAvatar,changePassword,forgotPassword,resetPassword,googleAuth,updateProfile } from "../controller/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import upload from "../uploads/upload.middleware.js";
 
@@ -17,6 +17,7 @@ const avatarUpload = (req, res, next) => {
 router.post("/register",registerUser);
 router.post("/login",loginUser);
 router.get("/me",protect,getMe);
+router.put("/profile",protect,updateProfile);
 router.post("/avatar",protect,avatarUpload,uploadAvatar);
 router.put("/change-password",protect,changePassword);
 router.post("/forgot-password",forgotPassword);

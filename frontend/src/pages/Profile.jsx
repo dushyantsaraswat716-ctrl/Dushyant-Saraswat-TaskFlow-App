@@ -9,7 +9,7 @@ import StatCard from "../components/StatCard";
 import { fetchStats } from "../redux/slices/dashboardSlice";
 import { fetchTasks } from "../redux/slices/taskSlice";
 import { setPref } from "../redux/slices/profileSlice";
-import { uploadAvatar, changePassword } from "../redux/slices/authSlice";
+import { uploadAvatar, changePassword, updateProfile } from "../redux/slices/authSlice";
 import { formatDate, timesAgo } from "../utils/format";
 import useToast from "../hooks/useToast";
 import { FiList, FiCheckCircle, FiClock, FiAlertTriangle } from "react-icons/fi";
@@ -19,6 +19,7 @@ export default function Profile() {
   const toast = useToast();
   const user = useSelector((s) => s.auth.user);
   const avatarStatus = useSelector((s) => s.auth.avatarStatus);
+  const profileStatus = useSelector((s) => s.auth.profileStatus);
   const passwordStatus = useSelector((s) => s.auth.passwordStatus);
   const { stats } = useSelector((s) => s.dashboard);
   const { items: tasks } = useSelector((s) => s.tasks);
@@ -35,6 +36,13 @@ export default function Profile() {
     formState: { errors: passwordErrors },
   } = useForm({ defaultValues: { currentPassword: "", newPassword: "" } });
 
+  const {
+    register: registerProfile,
+    handleSubmit: handleProfileSubmit,
+    reset: resetProfileForm,
+    formState: { errors: profileErrors },
+  } = useForm({ defaultValues: { name: "", email: "" } });
+
   useEffect(() => {
     dispatch(fetchStats());
     if (tasks.length === 0) dispatch(fetchTasks({}));
@@ -43,6 +51,10 @@ export default function Profile() {
   useEffect(() => {
     if (passwordOpen) resetPasswordForm();
   }, [passwordOpen, resetPasswordForm]);
+
+  useEffect(() => {
+    if (editOpen) resetProfileForm({ name: user?.name || "", email: user?.email || "" });
+  }, [editOpen, user, resetProfileForm]);
 
   const activity = [...tasks].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 6);
 
@@ -57,6 +69,16 @@ export default function Profile() {
       toast.success("Avatar updated");
     } else {
       toast.error(result.payload || "Avatar upload failed");
+    }
+  };
+
+  const onUpdateProfile = async (values) => {
+    const result = await dispatch(updateProfile(values));
+    if (updateProfile.fulfilled.match(result)) {
+      toast.success("Profile updated successfully");
+      setEditOpen(false);
+    } else {
+      toast.error(result.payload || "Could not update profile");
     }
   };
 
@@ -216,22 +238,39 @@ export default function Profile() {
       </div>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit profile" maxWidth="max-w-sm">
-        <div className="space-y-4">
+        <form onSubmit={handleProfileSubmit(onUpdateProfile)} className="space-y-4">
           <div>
             <label className="label-text">Name</label>
-            <input className="input-field" defaultValue={user?.name} disabled />
+            <input
+              className="input-field"
+              placeholder="Your name"
+              {...registerProfile("name", { required: "Name is required" })}
+            />
+            {profileErrors.name && <p className="mt-1 text-xs text-red-500">{profileErrors.name.message}</p>}
           </div>
           <div>
             <label className="label-text">Email</label>
-            <input className="input-field" defaultValue={user?.email} disabled />
+            <input
+              type="email"
+              className="input-field"
+              placeholder="you@example.com"
+              {...registerProfile("email", {
+                required: "Email is required",
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address" },
+              })}
+            />
+            {profileErrors.email && <p className="mt-1 text-xs text-red-500">{profileErrors.email.message}</p>}
           </div>
-          <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
-            Profile editing isn't wired up yet — the backend doesn't currently expose an update-profile endpoint.
-          </p>
-          <button className="btn-secondary w-full" onClick={() => setEditOpen(false)}>
-            Close
-          </button>
-        </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" className="btn-secondary" onClick={() => setEditOpen(false)}>
+              Cancel
+            </button>
+            <button type="submit" disabled={profileStatus === "loading"} className="btn-primary">
+              {profileStatus === "loading" && <FiLoader className="h-4 w-4 animate-spin" />}
+              Save changes
+            </button>
+          </div>
+        </form>
       </Modal>
 
       <Modal open={passwordOpen} onClose={() => setPasswordOpen(false)} title="Change password" maxWidth="max-w-sm">
